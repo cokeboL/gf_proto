@@ -2,7 +2,7 @@
 #include "vld.h"
 #endif
 
-#include "gfproto2.h"
+#include "gfproto.h"
 
 #if 0
 #define gfp_new gf_proto_new
@@ -33,46 +33,8 @@ int main()
 	gfp_load_files(filelist, sizeof(filelist) / sizeof(filelist[0]));
 
 
-#if 0
-	printf("\n***************************************\n");
-	gfp_msg *msg = gfp_new_msg("xx2");
-	
-	gfp_node *ss = gfp_get_field(msg, "ss");
-	gfp_set_string(ss, "hello", strlen("hello") + 1);
-
-
-	gfp_node *ii = gfp_get_field(msg, "ii");
-	gfp_set_int(ii, 369);
-
-	gfp_array_node *axx = gfp_get_field(msg, "axx");
-	gfp_node *xx1 = gfp_new_mes_node("xx");
-	gfp_msg *axxmsg1 = gfp_new_msg("xx");
-	gfp_set_msg(xx1, axxmsg1);
-	gfp_push(axx, xx1); 
-	gfp_node *axxii1 = gfp_get_field(xx1, "ii");
-	gfp_set_int(axxii1, 1);
-	
-
-	gfp_node *bb = gfp_get_field(msg, "bb");
-	gfp_set_bool(bb, true);
-
-	gfp_node *ff = gfp_get_field(msg, "ff");
-	gfp_set_float(ff, 78.654);
-
-	gfp_array_node *aii = gfp_get_field(msg, "aii");
-	gfp_node *aiinode = gfp_new_int();
-	gfp_set_int(aiinode, 480);
-	gfp_push(aii, aiinode);
-
-	int len;
-	char *buf = gfp_encode(msg, &len);
-
-	printf("len: %d\n", len);
-	for (int i = 0; i < len; i++)
-	{
-		printf("%c", buf[i]);
-	}
-	printf("\n");
+#if 1
+	gfp_node *msg = gfp_new_msg("xx2");
 #endif
 	
 	printf("\n***************************************\n");

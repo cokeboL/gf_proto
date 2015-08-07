@@ -76,11 +76,11 @@ static void realloc_str(void **str, int len)
 {
 	if (!*str)
 	{
-		*str = GFMalloc(len);
+		*str = GFPMalloc(len);
 	}
 	else
 	{
-		*str = GFRealloc(*str, len);
+		*str = GFPRealloc(*str, len);
 	}
 }
 
@@ -97,7 +97,7 @@ static const char *get_str_from_file(const char *file, int *filelen)
 	int len = ftell(fp);
 	fseek(fp, 0, SEEK_SET);
 
-	char *buf = (char*)GFMalloc(len+1);
+	char *buf = (char*)GFPMalloc(len+1);
 	int nread = fread(buf, len, 1, fp);
 	buf[len] = 0;
 
@@ -136,7 +136,7 @@ static const char *get_str_from_file(const char *file, int *filelen)
 		head = begin;
 		buf[len] = 0;
 	}
-	GF_PROTO_INFO("protofile %s: %s\n", file, buf);
+	GFP_INFO("protofile %s: %s\n", file, buf);
 
 	*filelen = len;
 
@@ -261,7 +261,7 @@ static GF_Proto_Node *get_itemdef_by_str(const char *str, int len)
 	{
 		if (i + 1 > len)
 		{
-			GFFree(typenode);
+			GFPFree(typenode);
 			return 0;
 		}
 
@@ -275,7 +275,7 @@ static GF_Proto_Node *get_itemdef_by_str(const char *str, int len)
 		{
 			if (i + 1 > len)
 			{
-				GFFree(typenode);
+				GFPFree(typenode);
 				return 0;
 			}
 
@@ -287,7 +287,7 @@ static GF_Proto_Node *get_itemdef_by_str(const char *str, int len)
 		{
 			if (i + 1 > len)
 			{
-				GFFree(typenode);
+				GFPFree(typenode);
 				return 0;
 			}
 
@@ -343,10 +343,12 @@ static GF_Proto_Node *get_itemdef_by_str(const char *str, int len)
 
 static GF_Proto_Node *parse_msgdef_from_str(const char *str, int slen)
 {
-	GF_Proto_Node *msg = (GF_Proto_Node*)GFMalloc(sizeof(GF_Proto_Node));
+	GF_Proto_Node *msg = 0;
+	realloc_str(&msg, sizeof(GF_Proto_Node));
 	msg->_len = 0;
+	msg->_type = GF_PROTO_TYPE_MSG;
 	//msg->_value._avalue._nodes
-	gfp_nodes(msg) = 0;
+	gfp_children(msg) = 0;
 	
 
 	GF_Proto_Node *typenode = 0;
@@ -360,7 +362,7 @@ static GF_Proto_Node *parse_msgdef_from_str(const char *str, int slen)
 	{
 		if (i + 1 > slen)
 		{
-			GFFree(msg);
+			GFPFree(msg);
 			return 0;
 		}
 
@@ -379,8 +381,8 @@ static GF_Proto_Node *parse_msgdef_from_str(const char *str, int slen)
 		{
 			msg->_len++;
 
-			realloc_str(&gfp_nodes(msg), sizeof(GF_Proto_Node*)* msg->_len);
-			gfp_nodes(msg)[msg->_len - 1] = typenode;
+			realloc_str(&gfp_children(msg), sizeof(GF_Proto_Node*)* msg->_len);
+			gfp_children(msg)[msg->_len - 1] = typenode;
 		}
 	}
 
@@ -392,6 +394,8 @@ static GF_Proto_Node *parse_file(const char *file)
 {
 	int len, msglen;
 	GF_Proto_Node *msg = 0;
+
+	
 
 	const char *fstr = get_str_from_file(file, &len);
 	const char *curr, *next = fstr;
@@ -408,7 +412,7 @@ static GF_Proto_Node *parse_file(const char *file)
 		}
 	}
 
-	GFFree(fstr);
+	GFPFree(fstr);
 
 	return 0;
 }
@@ -416,7 +420,8 @@ static GF_Proto_Node *parse_file(const char *file)
 void gfp_load_files(const char **filelist, int n)
 {
 	_byte_order = get_bit_endian();
-
+	_msg_defs._type = GF_PROTO_TYPE_ARRAY;
+	_msg_defs._len = 0;
 	for (int i = 0; i < n; i++)
 	{
 		parse_file(filelist[i]);
@@ -432,32 +437,38 @@ void gfp_unload()
 	}
 	if (_msg_defs._nodes)
 	{
-		GFFree(_msg_defs._nodes);
+		GFPFree(_msg_defs._nodes);
 	}
 }
 
-GF_Proto_Node *gf_proto_new_node(GF_PROTO_TYPE t, const char *msgname)
+GF_Proto_Node *gfp_new(GF_PROTO_TYPE t, const char *msgname)
 {
+	if (t == GF_PROTO_TYPE_ARRAY)
+	{
+		GFP_ERROR("sholdn't new array!");
+	}
+
 	GF_Proto_Node *node = 0;
 	realloc_str(&node, sizeof(GF_Proto_Node));
 	node->_type = t;
 	init_node(node);
-	if (t == GF_PROTO_TYPE_MESSAGE)
+
+	if (t == GF_PROTO_TYPE_MSG)
 	{
 		strcpy(node->_name, msgname);
 		GF_Proto_Node *msgdef = get_msg_def(msgname);
-		GF_Proto_Node **nodes = gfp_nodes(node); 
-		GF_Proto_Node **defnodes = gfp_nodes(msgdef);
+		GF_Proto_Node **nodes = gfp_children(node);
+		GF_Proto_Node **defnodes = gfp_children(msgdef);
 		int16_t len = gfp_len(gfp_array(msgdef));
 		for (int i = 0; i < len; i++)
 		{
 			realloc_str(&nodes[i], sizeof(GF_Proto_Node));
+			*nodes[i] = *defnodes[i];
 		}
 	}
-	else if (t == GF_PROTO_TYPE_ARRAY)
+	else
 	{
-		strcpy(gfp_array(node)->_name, msgname)
-		init_array(node);
+		
 	}
 
 	return node;

@@ -16,12 +16,12 @@
 #endif
 #endif
 
-#define GFMalloc malloc
-#define GFRealloc realloc
-#define GFFree   free
+#define GFPMalloc malloc
+#define GFPRealloc realloc
+#define GFPFree   free
 
-#define GF_PROTO_ERROR(xx) printf("[GF_PROTO_ERROR] %s %s %d, %s\n", __FILE__, __FUNCTION__, __LINE__, xx)
-#define GF_PROTO_INFO(xx) printf("[GF_PROTO_INFO] %s %s %d, %s\n", __FILE__, __FUNCTION__, __LINE__, xx)
+#define GFP_ERROR(xx) printf("[GF_PROTO_ERROR] %s %s %d, %s\n", __FILE__, __FUNCTION__, __LINE__, xx)
+#define GFP_INFO(xx) printf("[GF_PROTO_INFO] %s %s %d, %s\n", __FILE__, __FUNCTION__, __LINE__, xx)
 
 
 struct GF_Proto_Node;
@@ -160,12 +160,15 @@ extern GF_Proto_Message *gf_proto_decode(const char * str);
 #endif
 
 /****************************** interfaces ******************************/
-#define gfp_nodes(node) (node->_value._avalue._nodes)
+#define gfp_node GF_Proto_Node
+
+#define gfp_children(node) (node->_value._avalue._nodes)
 #define gfp_array(node) (&(node->_value._avalue))
 #define gfp_len(node) ((node)->_len)
 extern void gfp_destroy(GF_Proto_Node*);
 extern void gfp_unload();
 extern void gfp_load_files(const char **filelist, int n);
+extern GF_Proto_Node *gfp_new(GF_PROTO_TYPE t, const char *msgname);
 
 #define gfp_new_int(v)   {GF_PROTO_INT v = (value); gfp_new_node(GF_PROTO_TYPE_INT, &v, (0));}
 #define gfp_new_float(v)      {GF_PROTO_FLOAT v = (value); gfp_new_node(GF_PROTO_TYPE_FLOAT, &v, (0));}
@@ -173,6 +176,30 @@ extern void gfp_load_files(const char **filelist, int n);
 //#define gfp_new_array()       gfp_new_node(GF_PROTO_TYPE_INT, 0)
 #define gfp_new_bool(v)        gfp_new_node(GF_PROTO_TYPE_BOOL, 0)
 #define gfp_new_string(v)      gfp_new_node(GF_PROTO_TYPE_STRING, 0)
-#define gfp_new_msg(name) gfp_new_node(GF_PROTO_TYPE_MESSAGE, name)
+#define gfp_new_msg(name) gfp_new(GF_PROTO_TYPE_MSG, name)
+
+
+#if 0
+gfp_new()
+gfp_clone_node(node)
+gfp_clone_array(node)
+gfp_get(key)
+//gfp_fields(node)
+gfp_children(node)
+gfp_delete(node)
+
+gfp_int(node)
+gfp_float(node)
+gfp_double(node)
+gfp_array(node)
+gfp_bool(node)
+gfp_string(node)
+gfp_msg(node)
+
+gfp_push(arr, value)
+gfp_pop(arr)
+gfp_insert(arr, i, v)
+gfp_erase(arr, i)
+#endif
 
 #endif // _gfproto_h_
