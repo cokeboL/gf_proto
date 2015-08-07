@@ -441,6 +441,28 @@ void gfp_unload()
 	}
 }
 
+GF_Proto_Node *gfp_clone(GF_Proto_Node *node)
+{
+	GF_Proto_Node * newnode = 0;
+	realloc_str(&newnode, sizeof(GF_Proto_Node));
+	*newnode = *node;
+
+	if (node->_type == GF_PROTO_TYPE_MSG)
+	{
+		strcpy(newnode->_name, node->_name);
+		GF_Proto_Node **nodes = gfp_children(newnode);
+		GF_Proto_Node **defnodes = gfp_children(node);
+		int16_t len = gfp_len(gfp_array(node));
+		for (int i = 0; i < len; i++)
+		{
+			realloc_str(&nodes[i], sizeof(GF_Proto_Node));
+			*nodes[i] = *defnodes[i];
+		}
+	}
+
+	return newnode;
+}
+
 GF_Proto_Node *gfp_new(GF_PROTO_TYPE t, const char *msgname)
 {
 	if (t == GF_PROTO_TYPE_ARRAY)
@@ -448,30 +470,21 @@ GF_Proto_Node *gfp_new(GF_PROTO_TYPE t, const char *msgname)
 		GFP_ERROR("sholdn't new array!");
 	}
 
-	GF_Proto_Node *node = 0;
-	realloc_str(&node, sizeof(GF_Proto_Node));
-	node->_type = t;
-	init_node(node);
-
 	if (t == GF_PROTO_TYPE_MSG)
 	{
-		strcpy(node->_name, msgname);
 		GF_Proto_Node *msgdef = get_msg_def(msgname);
-		GF_Proto_Node **nodes = gfp_children(node);
-		GF_Proto_Node **defnodes = gfp_children(msgdef);
-		int16_t len = gfp_len(gfp_array(msgdef));
-		for (int i = 0; i < len; i++)
-		{
-			realloc_str(&nodes[i], sizeof(GF_Proto_Node));
-			*nodes[i] = *defnodes[i];
-		}
+		
+		return gfp_clone(msgdef);
 	}
 	else
 	{
-		
-	}
+		GF_Proto_Node *node = 0;
+		realloc_str(&node, sizeof(GF_Proto_Node));
+		node->_type = t;
+		init_node(node);
 
-	return node;
+		return node;
+	}	
 }
 
 
